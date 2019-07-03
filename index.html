@@ -4,14 +4,14 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+		<title>Mapstruct</title>
 
 		<link rel="stylesheet" href="css/reset.css">
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+		<link rel="stylesheet" href="css/theme/beige.css">
 
 		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/monokai.css">
+		<link rel="stylesheet" href="lib/css/atom-one-light.css">
 
 		<!-- Printing and PDF exports -->
 		<script>
@@ -25,8 +25,306 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+					<img src="gfx/mapstruct.png" alt="Mapstruct" style="background: none; border: none; width: 600px;  box-shadow: none; -moz-box-shadow: none; -o-box-shadow: none; -webkit-box-shadow: none;">
+					<p>Dozer revolutioniert?</p>
+				</section>
+				<section>
+					Schreibe Mapper
+					<p class="fragment">in Java-Code</p>
+					<p class="fragment">und nicht per XML</p>
+				</section>
+				<section>
+					Mapstruct generiert Code zur Kompilierzeit
+					<p class="fragment">generierter Code ist einsehbar</p>
+					<p class="fragment">Code ist schneller, im vergleich zu Frameworks, die Code zur Laufzeit generieren</p>
+					<p class="fragment">Breakpoints an generiertem Code möglich</p>
+				</section>
+				<section>
+					<h3>Installation</h3>
+					<pre style="font-size: 10px;"><code class="xml" data-line-numbers="1-3,5-12,18-32,38-45" style="max-height: none;">...
+&lt;properties&gt;
+    &lt;org.mapstruct.mapstruct.version&gt;1.3.0.Final&lt;/org.mapstruct.mapstruct.version&gt;
+    &lt;org.projectlombok.lombok.version&gt;1.18.8&lt;/org.projectlombok.lombok.version&gt;
+&lt;/properties&gt;
+...
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.mapstruct&lt;/groupId&gt;
+        &lt;artifactId&gt;mapstruct&lt;/artifactId&gt;
+        &lt;version&gt;${org.mapstruct.mapstruct.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+        &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+        &lt;version&gt;${org.projectlombok.lombok.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+...
+&lt;build&gt;
+    &lt;plugin&gt;
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+            &lt;version&gt;3.6.0&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;annotationProcessorPaths&gt;
+                    &lt;path&gt;
+                        &lt;groupId&gt;org.mapstruct&lt;/groupId&gt;
+                        &lt;artifactId&gt;mapstruct-processor&lt;/artifactId&gt;
+                        &lt;version&gt;${org.mapstruct.mapstruct.version}&lt;/version&gt;
+                    &lt;/path&gt;
+                    &lt;path&gt;
+                        &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+                        &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+                        &lt;version&gt;${org.projectlombok.lombok.version}&lt;/version&gt;
+                    &lt;/path&gt;
+                &lt;/annotationProcessorPaths&gt;
+                &lt;compilerArgs&gt;
+                    -Amapstruct.defaultComponentModel=cdi
+                &lt;/compilerArgs&gt;
+        &lt;/configuration&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+				</section>
+				<section>
+					<h3>Der erste Mapper</h3>
+					<pre><code class="java">public class Car {
+	private String make;
+	private int numberOfSeats;
+	private CarType type;
+	//constructor, getters, setters etc.
+}</code></pre>
+					<pre><code class="java">public class CarDto {
+	private String make;
+	private int numberOfSeats;
+	private CarType type;
+	//constructor, getters, setters etc.
+}</code></pre>
+					<pre class="fragment"><code class="java">@Mapper
+public interface CarMapper {
+	CarDto carToCarDto(Car car);
+}</code></pre>
+				</section>
+				<section>
+					<pre><code class="java">
+import java.util.function.Function;
+
+@Mapper
+public interface CarMapper extends Function&lt;Car, CarDto&gt; {
+}</code></pre>
+					<pre class="fragment"><code class="java">
+@FunctionalInterface
+public interface Function&lt;T, R&gt; {
+    /**
+     * Applies this function to the given argument.
+     *
+     * @param t the function argument
+     * @return the function result
+     */
+    R apply(T t);
+
+...
+
+}</code></pre>
+				</section>
+				<section>
+					Mapstruct benötigt einen parameterlosen öffentlichen Standardkonstruktor
+					<p class="fragment">Alternativ einen Builder</p>
+					<ul class="fragment">
+						<li><strong><u>Lombok</u></strong></li>
+						<li>AutoValue</li>
+						<li>Immutables</li>
+						<li>FreeBuilder</li>
+						<li class="fragment">selbst geschriebene Builder, wenn sie den Anforderungen entsprechen,
+						oder einen BuilderProvider dafür schreiben</li>
+				</ul>
+				</section>
+				<section>
+					<h3>Zugriff auf die Mapper</h3>
+					<h4>per Injection</h4>
+					<div class="fragment">
+						<pre><code class="xml">&lt;compilerArgs&gt;
+    -Amapstruct.defaultComponentModel=cdi
+&lt;/compilerArgs&gt;</code></pre>
+						<pre><code class="java">@Mapper(componentModel = "cdi")
+public interface CarMapper {
+    CarDto carToCarDto(Car car);
+}</code></pre>
+					</div>
+					<pre class="fragment"><code class="java">@Inject
+public CarService(CarMapper carMapper) {
+	this.carMapper = carMapper;
+}</code></pre>
+				</section>
+				<section>
+					<h3>Zugriff auf die Mapper</h3>
+					<h4>per Direktzugriff</h4>
+					<div class="fragment">
+						<pre style="font-size:22px;"><code class="java" style="max-height: none;" data-line-numbers="1,9">CarMapper mapper = Mappers.getMapper( CarMapper.class );
+
+@Test
+public void shouldMapCarToDto() {
+	//given
+	Car car = new Car( "Morris", 5, CarType.SEDAN );
+
+	//when
+	CarDto carDto = mapper.carToCarDto( car );
+
+	//then
+	assertThat( carDto ).isNotNull();
+	assertThat( carDto.getMake() ).isEqualTo( "Morris" );
+	assertThat( carDto.getSeatCount() ).isEqualTo( 5 );
+	assertThat( carDto.getType() ).isEqualTo( "SEDAN" );
+}</code></pre>
+					</div>
+				</section>
+				<section>
+					<h3>Basic Mappings</h3>
+					<pre><code class="java">@Mapper
+public interface CarMapper {
+
+    @Mapping(source = "make", target = "manufacturer")
+    @Mapping(source = "numberOfSeats", target = "seatCount")
+    CarDto carToCarDto(Car car);
+}</code></pre>
+				</section>
+				<section>
+					<h4>Adding custom methods to mappers</h4>
+					<pre><code class="java">@Mapper
+public interface CarMapper {
+
+    @Mapping(...)
+    ...
+    CarDto carToCarDto(Car car);
+
+    default PersonDto personToPersonDto(Person person) {
+        //hand-written mapping logic
+    }
+}</code></pre>
+					<pre><code class="java">@Mapper
+public abstract class CarMapper {
+
+    @Mapping(...)
+    ...
+    public abstract CarDto carToCarDto(Car car);
+
+    public PersonDto personToPersonDto(Person person) {
+        //hand-written mapping logic
+    }
+}</code></pre>
+				</section>
+				<section>
+					<h3>Implicit type conversions</h3>
+					Mapping zwischen Integer und String
+					Konvertierungsregel kann angegeben werden
+					<pre><code class="java">@Mapper
+public interface CarMapper {
+
+    @Mapping(source = "price", numberFormat = "$#.00")
+    CarDto carToCarDto(Car car);
+
+    @IterableMapping(numberFormat = "$#.00")
+    List&lt;String&gt; prices(List&lt;Integer&gt; prices);
+}</code></pre>
+				</section>
+				<section>
+					Konvertierung möglich zwischen
+					<ul>
+						<li>enum und String</li>
+						<li class="fragment">Big Number Typen wie BigDecimal und BigInteger</li>
+						<li class="fragment">Java primitives und String</li>
+						<li class="fragment">Datum und String</li>
+						<li class="fragment">verschiedenen Datenimplementierung wie Joda, Calendar, DateTime...</li>
+					</ul>
+				</section>
+				<section>
+					<h3>Mapping von Objektrefenzen</h3>
+					<pre><code class="java">@Mapper
+public interface CarMapper {
+
+    CarDto carToCarDto(Car car);
+
+    PersonDto personToPersonDto(Person person);
+}</code></pre>
+					Auch automamtischen Generierung von Mappingmethoden, falls keine passende vorhanden
+				</section>
+				<section>
+					<h3>Aufrufen anderer Mapper</h3>
+					<pre><code class="java" data-line-numbers="1">@Mapper(uses=DateMapper.class)
+public class CarMapper {
+
+    CarDto carToCarDto(Car car);
+}</code></pre>
+				</section>
+				<section>
+					<h3>Mapping Collections</h3>
+					Man kann Mapper schreiben für
+					<ul>
+						<li>Liste zu Liste</li>
+						<li class="fragment">Set zu Set</li>
+						<li class="fragment">Map zu Map</li>
+						<li class="fragment">Stream zu Stream</li>
+						<li class="fragment">Stream zu Collection</li>
+						<li class="fragment">Typen in Listen</li>
+					</ul>
+				</section>
+				<section>
+					<h3>Mapping Enums</h3>
+					<pre><code class="java">@Mapper
+public interface OrderMapper {
+
+    @ValueMappings({
+        @ValueMapping(source = "EXTRA", target = "SPECIAL"),
+        @ValueMapping(source = "STANDARD", target = "DEFAULT"),
+        @ValueMapping(source = "NORMAL", target = "DEFAULT")
+    })
+    ExternalOrderType orderTypeToExternalOrderType(OrderType orderType);
+}</code></pre>
+				</section>
+				<section>
+					<h3>Fehlermeldungen</h3>
+					Sind extrem hilfreich
+					<ul>
+						<li>
+							Can't map Collection element "PersonDto address" to "Person address". Consider to declare/implement a mapping method: "Address map(AdressDto value)".
+						</li>
+						<li>
+							The return type VehicleDto is an abstract class or interface. Provide a non abstract / non interface result type or a factory method.
+						</li>
+						<li>
+							AddressDto does not have an accessible parameterless constructor.
+						</li>
+					</ul>
+				</section>
+				<section>
+					<h3>Schwach im Umgang mit Polymorhpie</h3>
+					<pre style="font-size:20px;"><code class="java" style="max-height: none; max-width: 1000px;">@Mapper
+public class OrderDataDTOMapper implements Function&lt;OrderDataDTO, OrderDataDto&gt; {
+
+    private Map&lt;Class&lt;? extends OrderDataDTO&gt;, Function&lt;OrderDataDTO, OrderDataDto&gt;&gt; mapOrderDataMappers =
+            new ImmutableMap.Builder&lt;Class&lt;? extends OrderDataDTO&gt;, Function&lt;? extends OrderDataDTO, ? extends OrderDataDto&gt;&gt;()
+                    .put(LetterOfIntentOrderDataDTO.class, new LetterOfIntentOrderDataDTOMapperImpl())
+                    .put(LineProviderMigrationOrderDataDTO.class, new LineProviderMigrationOrderDataDTOMapperImpl())
+                    .put(MaxBandwidthVDSLMigrationOrderDataDTO.class, new MaxBandwidthVDSLMigrationOrderDataDTOImpl())
+                    .put(RelocationOrderDataDTO.class, new RelocationOrderDataDTOImpl())
+                    .put(TariffBandwidthMigrationOrderDataDTO.class, new TariffBandwidthMigrationOrderDataDTOMapperImpl())
+                    .put(TariffChangeOrderDataDTO.class, new TariffChangeOrderDataDTOMapperImpl())
+                    .put(ExtendedOrderDataDTO.class, new ExtendedOrderDataDTOMapperImpl())
+                    .build();
+
+    @Override
+    public OrderDataDto apply(OrderDataDTO orderDataDTO) {
+        return mapOrderDataMappers
+                .get(orderDataDTO.getClass())
+                .apply(orderDataDTO);
+    }
+}</code></pre>
+				</section>
+				<section>
+					http://mapstruct.org
+				</section>
 			</div>
 		</div>
 
